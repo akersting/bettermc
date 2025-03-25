@@ -222,7 +222,7 @@ test_that("joint fatal and non-fatal errors are handled correctly", {
       }, mc.allow.fatal = TRUE, mc.fail.early = FALSE),
       regexp = "Out of Memory Killer"
     ),
-    regexp = "stop\\(i\\)"
+    regexp = "Error: 2"
   )
 
   expect_warning(

@@ -931,7 +931,7 @@ mclapply <- function(X, FUN, ...,
     if (!mc.retry.silent && tries_left &&
         any(mc_error <- vapply(res, inherits, logical(1L), what = "etry-error"))) {
       orig_message <- res[[which(mc_error)[1]]]
-      msg <- try_idx %+% ": error(s) occured during mclapply; first original message:\n\n" %+%
+      msg <- try_idx %+% ": error(s) occured during mclapply; first original message:\n  \n  " %+%
         paste0(capture.output(orig_message), collapse = "\n")
       message(msg)
     }
@@ -1025,13 +1025,13 @@ mclapply <- function(X, FUN, ...,
         message("failed to save crash dump to ", file)
       } else {
         file <- normalizePath(file)
-        message("crash dump saved to file'", file, "'; for debugging the first error, use:\n'{last.dump <- readRDS(\"",
+        message("crash dump saved to file'", file, "'; for debugging the first error, use:\n  '{last.dump <- readRDS(\"",
                 file, "\"); utils::debugger(attr(last.dump[[", error_idx, "]], \"dump.frames\"))}'")
       }
     } else {
       assign(mc.dumpto, res, crash_dumps)
       message("crash dump saved to object '", mc.dumpto, "' in environment 'bettermc::crash_dumps';",
-              " for debugging the first error, use:\n'utils::debugger(attr(bettermc::crash_dumps[[\"",
+              " for debugging the first error, use:\n  'utils::debugger(attr(bettermc::crash_dumps[[\"",
               mc.dumpto, "\"]][[", error_idx, "]], \"dump.frames\"))'")
     }
   }
@@ -1059,11 +1059,12 @@ mclapply <- function(X, FUN, ...,
 
   if (error_idx) {
     orig_message <- res[[error_idx]]
-    msg <- "error(s) occured during mclapply; first original message:\n\n" %+%
-      paste0(capture.output(orig_message), collapse = "\n")
+    msg <- "error(s) occured during mclapply; first original message:\n  \n  " %+%
+      orig_message
     if (isTRUE(mc.allow.error)) {
       w_list <- c(w_list, list(msg))
     } else if (isFALSE(mc.allow.error)) {
+      message(paste0(capture.output(orig_message), collapse = "\n"))  # print traceback
       e_list <- c(e_list, list(msg))
     }
   }
@@ -1071,9 +1072,6 @@ mclapply <- function(X, FUN, ...,
   # ?options on warning.length: "sets the truncation limit for error and
   # warning messages. A non-negative integer, with allowed values
   # 100...8170, default 1000."
-  #
-  # we increase this here because a msg might contain a traceback, which is
-  # easily longer than 1000
   opt_bk <- options(warning.length = 8170L)
   on.exit(options(opt_bk), add = TRUE)
 
@@ -1081,7 +1079,7 @@ mclapply <- function(X, FUN, ...,
   if (length(e_list) == 1L) {
     root_stop(e_list[[1L]])
   } else if (length(e_list) == 2L) {
-    msg <- paste0(e_list[[1L]], "\n\n--- AND ---\n\n", e_list[[2L]])
+    msg <- paste0(e_list[[1L]], "\n  \n  --- AND ---\n  \n  ", e_list[[2L]])
     root_stop(msg)
   }
 

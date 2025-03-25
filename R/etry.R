@@ -52,7 +52,11 @@ etry <- function(expr, silent = FALSE,
       }
 
       requireNamespace("utils")  # for print.ls_str()
-      LO <<- rev(lapply(seq_along(TB), function(i) {
+
+      # collect local variables for each frame also included in the traceback
+      # - 0L includes .GlobalEnv
+      # - rev() to align with the stack order of TB
+      LO <<- rev(lapply(c(0L, seq_along(TB)), function(i) {
         e <- sys.frame(i)
         vars <- ls(e, all.names = TRUE)
         is_uneval_promise <- vapply(vars, is.uneval.promise, NA, env = e)
@@ -65,12 +69,17 @@ etry <- function(expr, silent = FALSE,
         vars4ls_str <- vars[!is_uneval_promise & !is_promise_missing_arg]
         # we have to skip "...", because evaluating an object of type "..." in
         # older R versions (e.g. v3.5.3) fails if a missing argument was passed
-        # in ... (in e.g. v4.2.3 this no longer is an issue)
+        # in ... (in e.g. v4.2.3 this no longer is an issue);
+        # we handle it separately below
         vars4ls_str <- setdiff(vars4ls_str, "...")
-        locals <- capture.output(
-          print(structure(vars4ls_str, envir = e, mode = "any", class = "ls_str"))
-        )
-        uneval_promises <- unlist(lapply(vars[is_uneval_promise], function(v) {
+
+        locals <- sapply(vars4ls_str, function(v) {
+          capture.output(
+            print(structure(v, envir = e, mode = "any", class = "ls_str"))
+          )
+        }, simplify = FALSE)
+
+        uneval_promises <- sapply(vars[is_uneval_promise], function(v) {
           # keep at most 5 lines of promise code and indicate truncation
           promise_code <- eval(parse(text = paste0("substitute(", v, ", e)")))
           pcode <- deparse(promise_code, width.cutoff = 500L, nlines = 6L)
@@ -80,20 +89,43 @@ etry <- function(expr, silent = FALSE,
           if (length(pcode) == 1L) {
             paste0(v, " : <unevaluated promise> (", pcode, ")")
           } else {
-            paste0(v, " : <unevaluated promise> (\n", paste0(pcode, collapse = "\n"), "\n)")
+            c(paste0(v, " : <unevaluated promise> ("), paste0("  ", pcode), ")")
           }
-        }))
-        missing_promises <- unlist(lapply(vars[is_promise_missing_arg], function(v) {
+        }, simplify = FALSE)
+
+        missing_promises <- sapply(vars[is_promise_missing_arg], function(v) {
           paste0(v, " : <missing>")
-        }))
+        }, simplify = FALSE)
 
         ellipsis <- if ("..." %in% vars) {
-          "<...>"
+          l <- eval(substitute(alist(...), e))
+          lapply(seq_along(l), function(v) {
+            name <- names(l)[v]
+            if (is.null(name) || name == "") {
+              name <- as.character(v)
+            }
+            promise_code <- l[[v]]
+            pcode <- deparse(promise_code, width.cutoff = 500L, nlines = 6L)
+            if (length(pcode) == 6L) {
+              pcode[6L] <- "..."
+            }
+            if (length(pcode) == 1L) {
+              paste0("..", name, " : <promise> (", pcode, ")")
+            } else {
+              c(paste0("..", name, " : <promise> ("), paste0("  ", pcode), ")")
+            }
+          })
         } else {
-          character()
+          list()
         }
 
-        c(ellipsis, uneval_promises, missing_promises, locals)
+        # don't re-order ellipsis; it is already in a meaningful order (and has no names)
+        ret <- c(uneval_promises, missing_promises, locals)
+        if (length(ret) > 0) {  # cf. https://bugs.r-project.org/show_bug.cgi?id=18872
+          unlist(c(ellipsis, ret[order(names(ret))]), use.names = FALSE)
+        } else {
+          unlist(ellipsis, use.names = FALSE)
+        }
       }))
 
       if (dump.frames != "no") {
@@ -146,14 +178,15 @@ etry <- function(expr, silent = FALSE,
 `print.etry-error` <- function(x, max.lines = getOption("traceback.max.lines",
                                                         getOption("deparse.max.lines", -1L)),
                                ...) {
-  cat(paste0(x, "\n\nTraceback:\n"))
+  cat(paste0("\n", x, "\n  \n "))
   n <- length(xx <- attr(x, "traceback"))
   if (n == 0L)
     cat(gettext("No traceback available"), "\n")
   else {
+    cat("Traceback with variables:\n")
     for (i in 1L:n) {
       xi <- xx[[i]]
-      label <- paste0(n - i + 1L, ": ")
+      label <- paste0("  ", n - i + 1L, ": ")
       m <- length(xi)
       srcloc <- if (!is.null(srcref <- attr(xi, "srcref"))) {
         srcfile <- attr(srcref, "srcfile")
@@ -170,18 +203,22 @@ etry <- function(expr, silent = FALSE,
       if (!is.null(srcloc)) {
         xi[m] <- paste0(xi[m], srcloc)
       }
+      blanks <- substr("            ", 1L,
+                       nchar(label, type = "w"))
       if (m > 1)
-        label <- c(label, rep(substr("          ", 1L,
-                                     nchar(label, type = "w")), m - 1L))
-      cat(paste0(label, xi), sep = "\n")
+        label <- c(label, rep(blanks, m - 1L))
 
-      cat("\nLocal variables:\n")
-      cat(attr(x, "locals")[[i]], sep = "\n")
-      cat("\n")
+      cat(paste0(label, xi), sep = "\n")
+      cat(blanks, paste0(blanks, "Local variables:"), sep = "\n")
+      blanks <- paste0(blanks, "  ")
+      cat(paste0(blanks, attr(x, "locals")[[i]]), sep = "\n")
     }
+
+    cat("  \n  Variables in GlobalEnv:\n")
+    cat(paste0("    ", attr(x, "locals")[[i + 1L]]), sep = "\n")
   }
 
-  if (length(attr(x, "dump.frames"))) cat(paste0("\nCrash dump avilable. Use 'debugger(attr(*, \"dump.frames\"))' for debugging.\n"))
+  if (length(attr(x, "dump.frames"))) cat(paste0("  \n  Crash dump avilable. Use 'debugger(attr(*, \"dump.frames\"))' for debugging.\n\n"))
 
   invisible()
 }

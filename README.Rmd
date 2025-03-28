@@ -83,11 +83,8 @@ f <- function(x) g(as.character(x))
 bettermc::mclapply(1:2, f, mc.dumpto = "last.dump")
 ```
 ```{r crashdump}
-# in a non-interactive session a file "last.dump.rds" is created
-last.dump <- readRDS("last.dump.rds")
-
 # in an interactive session use debugger() instead of print() for actual debugging
-print(attr(last.dump[[1L]], "dump.frames"))
+print(attr(bettermc::crash_dumps[["last.dump"]][[1]], "dump.frames"))
 ```
 
 As shown in the example above, `bettermc` by default fails if there are errors in child processes.
@@ -284,3 +281,23 @@ res <-
       i
   }, mc.retry = 1, mc.cores = 10, mc.force.fork = TRUE, mc.dumpto = "last.dump")
 ```
+
+
+### Timeouts
+`bettermc` can kill child processes after a certain time has elapsed:
+
+```{r timeout}
+bettermc::mclapply(X = 1:4, function(i) {
+  Sys.sleep(i * 2)
+  i
+},
+  mc.preschedule = FALSE, mc.allow.fatal = NA,
+  mc.timeout.elapsed = 5, mc.force.fork = TRUE
+)
+```
+
+It is recommended to use `mc.force.fork = TRUE` to not accidentally kill the main R process if `X` is of length 1.
+
+In contrast to `base::setTimeLimit()` and hence `R.utils::withTimeout()`, it does *not* suffer from the following limitation:
+
+> Time limits are checked whenever a user interrupt could occur. This will happen frequently in R code and during Sys.sleep(*), but only at points in compiled C and Fortran code identified by the code author.

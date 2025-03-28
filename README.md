@@ -68,39 +68,36 @@ bettermc::mclapply(1:2, f, mc.dumpto = "last.dump")
     ##   Error: non-numeric argument to binary operator
 
 ``` r
-# in a non-interactive session a file "last.dump.rds" is created
-last.dump <- readRDS("last.dump.rds")
-
 # in an interactive session use debugger() instead of print() for actual debugging
-print(attr(last.dump[[1L]], "dump.frames"))
+print(attr(bettermc::crash_dumps[["last.dump"]][[1]], "dump.frames"))
 ```
 
     ## $`mclapply.R#683: etry(withCallingHandlers(list(FUN(X, ...)), warning = whand`
-    ## <environment: 0x562b16d62b80>
+    ## <environment: 0x55699569f828>
     ## 
     ## $`etry.R#41: tryCatch(withCallingHandlers(expr, error = function(e) {\n    if (`
-    ## <environment: 0x562b16d62b10>
+    ## <environment: 0x55699569f908>
     ## 
     ## $`tryCatchList(expr, classes, parentenv, handlers)`
-    ## <environment: 0x562b16dcc640>
+    ## <environment: 0x55699554f7e0>
     ## 
     ## $`tryCatchOne(expr, names, parentenv, handlers[[1]])`
-    ## <environment: 0x562b16dd6fc8>
+    ## <environment: 0x556995541988>
     ## 
     ## $`doTryCatch(return(expr), name, parentenv, handler)`
-    ## <environment: 0x562b16de65f0>
+    ## <environment: 0x5569955178d0>
     ## 
     ## $`etry.R#41: withCallingHandlers(expr, error = function(e) {\n    if ("max.line`
-    ## <environment: 0x562b16df0f40>
+    ## <environment: 0x5569955117b8>
     ## 
     ## $`mclapply.R#683: withCallingHandlers(list(FUN(X, ...)), warning = whandler, `
-    ## <environment: 0x562b16eb1c60>
+    ## <environment: 0x5569951c14c0>
     ## 
     ## $`mclapply.R#683: FUN(X, ...)`
-    ## <environment: 0x562b16fcfcc8>
+    ## <environment: 0x556994f2ccf8>
     ## 
     ## $`g(as.character(x))`
-    ## <environment: 0x562b16fcfa60>
+    ## <environment: 0x556994f2cf60>
     ## 
     ## attr(,"error.message")
     ## [1] "non-numeric argument to binary operator\n\n"
@@ -255,17 +252,11 @@ microbenchmark::microbenchmark(
 
     ## Unit: milliseconds
     ##       expr       min        lq      mean    median        uq       max neval
-    ##  bettermc1  237.4364  239.4276  247.3899  239.8564  250.2289  280.6261    10
-    ##  bettermc2  488.7219  501.4498  515.9866  504.1103  515.2964  601.7679    10
-    ##  bettermc3  891.4259  938.4607 1020.0764  977.2877 1112.0636 1286.8570    10
-    ##  bettermc4 1029.0596 1095.0350 1262.9045 1243.5059 1371.0892 1701.0333    10
-    ##   parallel 1107.1410 1275.2542 1414.3521 1341.6966 1360.1669 2433.4910    10
-    ##   cld
-    ##  a   
-    ##   b  
-    ##    c 
-    ##    cd
-    ##     d
+    ##  bettermc1  258.2423  260.8886  266.0044  265.3691  270.6897  278.9562    10
+    ##  bettermc2  554.0544  554.9732  563.5756  562.0964  567.1360  588.7047    10
+    ##  bettermc3  997.2268 1081.1928 1100.8035 1100.4903 1125.7399 1184.1736    10
+    ##  bettermc4 1183.1943 1207.1514 1363.6663 1278.0570 1562.7704 1636.4377    10
+    ##   parallel 1272.5414 1417.2813 1574.7550 1483.6165 1548.4324 2474.5669    10
 
 In examples `bettermc1` and `bettermc2`, the child processes place the
 columns of the return value `X` in shared memory. The object which needs
@@ -342,8 +333,8 @@ microbenchmark::microbenchmark(
 
     ## Unit: seconds
     ##       expr       min        lq      mean    median        uq       max neval
-    ##  bettermc1  2.953808  2.953808  2.953808  2.953808  2.953808  2.953808     1
-    ##   parallel 25.902529 25.902529 25.902529 25.902529 25.902529 25.902529     1
+    ##  bettermc1  3.477804  3.477804  3.477804  3.477804  3.477804  3.477804     1
+    ##   parallel 28.348915 28.348915 28.348915 28.348915 28.348915 28.348915     1
 
 By default, `bettermc` replaces character vectors with objects of type
 `char_map` before returning them to the parent process:
@@ -354,8 +345,8 @@ str(X_comp)
 ```
 
     ## List of 3
-    ##  $ chars     : chr [1:999882] "0.465128936572" "0.3445984874852" "0.931506379740313" "0.408281016396359" ...
-    ##  $ idx       : int [1:30000000] 23961 23962 23963 23964 23965 23966 23967 23968 23969 23970 ...
+    ##  $ chars     : chr [1:999882] "0.691763624548912" "0.428920124191791" "0.944636366795748" "0.9647259155754" ...
+    ##  $ idx       : int [1:30000000] 198507 198506 198504 198503 198468 199015 199048 199049 199010 198505 ...
     ##  $ attributes: NULL
     ##  - attr(*, "class")= chr "char_map"
 
@@ -385,9 +376,9 @@ microbenchmark::microbenchmark(
 ```
 
     ## Unit: milliseconds
-    ##      expr       min        lq      mean    median        uq       max neval cld
-    ##  char_map  769.3582  775.9742  783.9736  782.5901  791.2813  799.9725     3  a 
-    ##     match 3468.2561 3497.6384 3532.5073 3527.0206 3564.6329 3602.2452     3   b
+    ##      expr       min        lq      mean    median        uq       max neval
+    ##  char_map  914.0587  915.9847  923.4248  917.9106  928.1079  938.3052     3
+    ##     match 4512.7746 4582.5145 4614.0304 4652.2544 4664.6583 4677.0622     3
 
 ### Retries
 
@@ -548,3 +539,48 @@ res <-
     ##   error(s) occured during mclapply; first original message:
     ##   
     ##   Error: 3
+
+### Timeouts
+
+`bettermc` can kill child processes after a certain time has elapsed:
+
+``` r
+bettermc::mclapply(X = 1:4, function(i) {
+  Sys.sleep(i * 2)
+  i
+},
+  mc.preschedule = FALSE, mc.allow.fatal = NA,
+  mc.timeout.elapsed = 5, mc.force.fork = TRUE
+)
+```
+
+    ## [[1]]
+    ## [1] 1
+    ## 
+    ## [[2]]
+    ## [1] 2
+    ## 
+    ## [[3]]
+    ## [1] "child process did not return any results"
+    ## attr(,"class")
+    ## [1] "fatal-error" "try-error"  
+    ## attr(,"condition")
+    ## <simpleError: child process did not return any results>
+    ## 
+    ## [[4]]
+    ## [1] "child process did not return any results"
+    ## attr(,"class")
+    ## [1] "fatal-error" "try-error"  
+    ## attr(,"condition")
+    ## <simpleError: child process did not return any results>
+
+It is recommended to use `mc.force.fork = TRUE` to not accidentally kill
+the main R process if `X` is of length 1.
+
+In contrast to `base::setTimeLimit()` and hence
+`R.utils::withTimeout()`, it does *not* suffer from the following
+limitation:
+
+> Time limits are checked whenever a user interrupt could occur. This
+> will happen frequently in R code and during Sys.sleep(\*), but only at
+> points in compiled C and Fortran code identified by the code author.

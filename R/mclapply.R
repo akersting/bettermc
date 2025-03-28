@@ -1025,7 +1025,7 @@ mclapply <- function(X, FUN, ...,
         message("failed to save crash dump to ", file)
       } else {
         file <- normalizePath(file)
-        message("crash dump saved to file'", file, "'; for debugging the first error, use:\n  '{last.dump <- readRDS(\"",
+        message("crash dump saved to file '", file, "'; for debugging the first error, use:\n  '{last.dump <- readRDS(\"",
                 file, "\"); utils::debugger(attr(last.dump[[", error_idx, "]], \"dump.frames\"))}'")
       }
     } else {

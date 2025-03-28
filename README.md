@@ -1,14 +1,8 @@
 # bettermc
 
-[![CRAN
-version](https://www.r-pkg.org/badges/version/bettermc)](https://cran.r-project.org/package=bettermc)
-[![CRAN
-status](https://cranchecks.info/badges/flavor/release/bettermc)](https://cran.r-project.org/web/checks/check_results_bettermc.html)
-[![downloads](https://cranlogs.r-pkg.org/badges/grand-total/bettermc)](https://cran.r-project.org/package=bettermc)
 [![R build
 status](https://github.com/gfkse/bettermc/workflows/R-CMD-check/badge.svg)](https://github.com/gfkse/bettermc/actions?workflow=R-CMD-check)
 [![codecov](https://codecov.io/gh/gfkse/bettermc/branch/master/graph/badge.svg?token=FYYM156COF)](https://codecov.io/gh/gfkse/bettermc)
-[![rchk](https://github.com/gfkse/bettermc/workflows/rchk/badge.svg)](https://github.com/gfkse/bettermc/actions?workflow=rchk)
 
 The `bettermc` package provides a wrapper around the
 `parallel::mclapply` function for better performance, error handling,
@@ -38,7 +32,10 @@ Here is a short overview on its main features …
 
 ### Progress Bar
 
-![progress bar](progress.png)
+<figure>
+<img src="progress.png" alt="progress bar" />
+<figcaption aria-hidden="true">progress bar</figcaption>
+</figure>
 
 ### Error Handling, Tracebacks and Crashdumps
 
@@ -48,20 +45,27 @@ child processes:
 ``` r
 g <- function(x) x + 1
 f <- function(x) g(as.character(x))
-bettermc::mclapply(1:2, f)
+bettermc::mclapply(1:2, f, mc.dumpto = "last.dump")
 ```
 
-    ## Error in bettermc::mclapply(1:2, f): error(s) occured during mclapply; first original message:
+    ## crash dump saved to object 'last.dump' in environment 'bettermc::crash_dumps'; for debugging the first error, use:
+    ##   'utils::debugger(attr(bettermc::crash_dumps[["last.dump"]][[1]], "dump.frames"))'
+
     ## 
     ## Error: non-numeric argument to binary operator
-    ## 
-    ## Traceback:
-    ## 51: g(as.character(x)) at <text>#2
-    ## 50: FUN(X, ...)
-    ## 49: withCallingHandlers(list(FUN(X, ...)), warning = whandler, message = mhandler, 
-    ##         condition = chandler) at etry.R#38
-    ## 48: withCallingHandlers(expr, error = function(e) {
+    ##   
+    ##  Traceback with variables:
+    ##   57: g(as.character(x))
+    ##       
+    ##       Local variables:
+    ##         x :  chr "1"
+    ##   56: FUN(X, ...) at mclapply.R#683
+    ##       
     ...
+
+    ## Error in bettermc::mclapply(1:2, f, mc.dumpto = "last.dump"): error(s) occured during mclapply; first original message:
+    ##   
+    ##   Error: non-numeric argument to binary operator
 
 ``` r
 # in a non-interactive session a file "last.dump.rds" is created
@@ -71,32 +75,32 @@ last.dump <- readRDS("last.dump.rds")
 print(attr(last.dump[[1L]], "dump.frames"))
 ```
 
-    ## $`etry(withCallingHandlers(list(FUN(X, ...)), warning = whandler, message = m`
-    ## <environment: 0x560a32da2f88>
+    ## $`mclapply.R#683: etry(withCallingHandlers(list(FUN(X, ...)), warning = whand`
+    ## <environment: 0x562b16d62b80>
     ## 
-    ## $`etry.R#38: tryCatch(withCallingHandlers(expr, error = function(e) {\n    if `
-    ## <environment: 0x560a32da2f18>
+    ## $`etry.R#41: tryCatch(withCallingHandlers(expr, error = function(e) {\n    if (`
+    ## <environment: 0x562b16d62b10>
     ## 
     ## $`tryCatchList(expr, classes, parentenv, handlers)`
-    ## <environment: 0x560a32dd2bf0>
+    ## <environment: 0x562b16dcc640>
     ## 
     ## $`tryCatchOne(expr, names, parentenv, handlers[[1]])`
-    ## <environment: 0x560a32dd5808>
+    ## <environment: 0x562b16dd6fc8>
     ## 
     ## $`doTryCatch(return(expr), name, parentenv, handler)`
-    ## <environment: 0x560a32dec420>
+    ## <environment: 0x562b16de65f0>
     ## 
-    ## $`etry.R#38: withCallingHandlers(expr, error = function(e) {\n    if ("max.lin`
-    ## <environment: 0x560a32df7798>
+    ## $`etry.R#41: withCallingHandlers(expr, error = function(e) {\n    if ("max.line`
+    ## <environment: 0x562b16df0f40>
     ## 
-    ## $`etry.R#38: withCallingHandlers(list(FUN(X, ...)), warning = whandler, messa`
-    ## <environment: 0x560a32e2deb0>
+    ## $`mclapply.R#683: withCallingHandlers(list(FUN(X, ...)), warning = whandler, `
+    ## <environment: 0x562b16eb1c60>
     ## 
-    ## $`FUN(X, ...)`
-    ## <environment: 0x560a32ef71c0>
+    ## $`mclapply.R#683: FUN(X, ...)`
+    ## <environment: 0x562b16fcfcc8>
     ## 
-    ## $`<text>#2: g(as.character(x))`
-    ## <environment: 0x560a32ef7000>
+    ## $`g(as.character(x))`
+    ## <environment: 0x562b16fcfa60>
     ## 
     ## attr(,"error.message")
     ## [1] "non-numeric argument to binary operator\n\n"
@@ -117,21 +121,13 @@ ret <- bettermc::mclapply(1:4, function(i) {
 }, mc.allow.fatal = TRUE, mc.allow.error = TRUE, mc.preschedule = FALSE)
 ```
 
-    ## Warning in bettermc::mclapply(1:4, function(i) {: at least one scheduled
-    ## core did not return results; maybe it was killed (by the Linux Out of Memory
-    ## Killer ?) or there was a fatal error in the forked process(es)
+    ## Warning in bettermc::mclapply(1:4, function(i) {: at least one scheduled core
+    ## did not return results; maybe it was killed (by the Linux Out of Memory Killer
+    ## ?) or there was a fatal error in the forked process(es)
 
     ## Warning in bettermc::mclapply(1:4, function(i) {: error(s) occured during mclapply; first original message:
-    ## 
-    ## Error: 1
-    ## 
-    ## Traceback:
-    ## 48: stop(i) at <text>#2
-    ## 47: FUN(X, ...)
-    ## 46: withCallingHandlers(list(FUN(X, ...)), warning = whandler, message = mhandler, 
-    ##         condition = chandler) at etry.R#38
-    ## 45: withCallingHandlers(expr, error = function(e) {
-    ...
+    ##   
+    ##   Error: 1
 
 Also in this case, full tracebacks and crash dumps are available:
 
@@ -140,7 +136,7 @@ stopifnot(inherits(ret[[1]], "try-error"))
 names(attributes(ret[[1L]]))
 ```
 
-    ## [1] "class"       "condition"   "traceback"   "dump.frames"
+    ## [1] "class"       "condition"   "traceback"   "locals"      "dump.frames"
 
 Additionally, results affected by fatal errors are clearly indicated and
 can be differentiated from legitimate `NULL` values:
@@ -182,12 +178,12 @@ f <- function(i) {
 ret <- bettermc::mclapply(1:4, f)
 ```
 
-    ##     3: [1] "c"
-    ##     4: [1] "d"
+    ## 0/3: [1] "c"
+    ## 0/4: [1] "d"
 
-    ## Warning in FUN(X, ...): 2: b
+    ## Warning in FUN(X, ...): 0/2: b
 
-    ##     1: a
+    ## 0/1: a
 
 Similarly, other conditions can also be re-signaled in the parent
 process.
@@ -259,11 +255,17 @@ microbenchmark::microbenchmark(
 
     ## Unit: milliseconds
     ##       expr       min        lq      mean    median        uq       max neval
-    ##  bettermc1  291.2821  316.8932  321.9454  323.3619  328.6756  342.8789    10
-    ##  bettermc2  572.2924  592.4564  640.5121  604.8961  613.9334 1002.5760    10
-    ##  bettermc3 1047.5861 1069.7110 1120.4034 1102.8991 1153.8105 1311.9648    10
-    ##  bettermc4  930.2634 1168.5147 1428.0177 1385.1090 1616.7027 2294.9783    10
-    ##   parallel  961.2617 1020.4822 1275.7263 1211.5029 1315.1250 2113.2437    10
+    ##  bettermc1  237.4364  239.4276  247.3899  239.8564  250.2289  280.6261    10
+    ##  bettermc2  488.7219  501.4498  515.9866  504.1103  515.2964  601.7679    10
+    ##  bettermc3  891.4259  938.4607 1020.0764  977.2877 1112.0636 1286.8570    10
+    ##  bettermc4 1029.0596 1095.0350 1262.9045 1243.5059 1371.0892 1701.0333    10
+    ##   parallel 1107.1410 1275.2542 1414.3521 1341.6966 1360.1669 2433.4910    10
+    ##   cld
+    ##  a   
+    ##   b  
+    ##    c 
+    ##    cd
+    ##     d
 
 In examples `bettermc1` and `bettermc2`, the child processes place the
 columns of the return value `X` in shared memory. The object which needs
@@ -340,8 +342,8 @@ microbenchmark::microbenchmark(
 
     ## Unit: seconds
     ##       expr       min        lq      mean    median        uq       max neval
-    ##  bettermc1  4.972368  4.972368  4.972368  4.972368  4.972368  4.972368     1
-    ##   parallel 29.875469 29.875469 29.875469 29.875469 29.875469 29.875469     1
+    ##  bettermc1  2.953808  2.953808  2.953808  2.953808  2.953808  2.953808     1
+    ##   parallel 25.902529 25.902529 25.902529 25.902529 25.902529 25.902529     1
 
 By default, `bettermc` replaces character vectors with objects of type
 `char_map` before returning them to the parent process:
@@ -352,8 +354,8 @@ str(X_comp)
 ```
 
     ## List of 3
-    ##  $ chars     : chr [1:999882] "0.132475900929421" "0.843039438594133" "0.448472284711897" "0.656558645190671" ...
-    ##  $ idx       : int [1:30000000] 394557 394558 394559 394560 394561 394562 394563 394564 394565 394566 ...
+    ##  $ chars     : chr [1:999882] "0.465128936572" "0.3445984874852" "0.931506379740313" "0.408281016396359" ...
+    ##  $ idx       : int [1:30000000] 23961 23962 23963 23964 23965 23966 23967 23968 23969 23970 ...
     ##  $ attributes: NULL
     ##  - attr(*, "class")= chr "char_map"
 
@@ -382,10 +384,10 @@ microbenchmark::microbenchmark(
 )
 ```
 
-    ## Unit: seconds
-    ##      expr      min       lq     mean   median       uq      max neval
-    ##  char_map 1.751307 1.768194 1.774945 1.785081 1.786765 1.788449     3
-    ##     match 4.025391 4.055226 4.107061 4.085061 4.147896 4.210731     3
+    ## Unit: milliseconds
+    ##      expr       min        lq      mean    median        uq       max neval cld
+    ##  char_map  769.3582  775.9742  783.9736  782.5901  791.2813  799.9725     3  a 
+    ##     match 3468.2561 3497.6384 3532.5073 3527.0206 3564.6329 3602.2452     3   b
 
 ### Retries
 
@@ -411,56 +413,56 @@ res <-
   }, mc.retry = 50, mc.cores = 10, mc.force.fork = TRUE)
 ```
 
-    ## at least one scheduled core did not return results; maybe it was killed (by the Linux Out of Memory Killer ?) or there was a fatal error in the forked process(es)
+    ## 0: at least one scheduled core did not return results; maybe it was killed (by the Linux Out of Memory Killer ?) or there was a fatal error in the forked process(es)
 
-    ## error(s) occured during mclapply; first original message:
-    ## 
+    ## 0: error(s) occured during mclapply; first original message:
+    ##   
+    ##   
     ## Error: 5
-    ## 
-    ## Traceback:
-    ## 46: stop(i) at <text>#5
-    ## 45: FUN(X, ...)
-    ## 44: withCallingHandlers(list(FUN(X, ...)), warning = whandler, message = mhandler, 
-    ##         condition = chandler) at etry.R#38
-    ## 43: withCallingHandlers(expr, error = function(e) {
+    ##   
+    ##  Traceback with variables:
+    ##   57: stop(i)
+    ##       
+    ##       Local variables:
+    ##         ..1 : <promise> (i)
     ...
 
-    ## at least one scheduled core did not return results; maybe it was killed (by the Linux Out of Memory Killer ?) or there was a fatal error in the forked process(es)
+    ## 1: at least one scheduled core did not return results; maybe it was killed (by the Linux Out of Memory Killer ?) or there was a fatal error in the forked process(es)
 
-    ## error(s) occured during mclapply; first original message:
-    ## 
+    ## 1: error(s) occured during mclapply; first original message:
+    ##   
+    ##   
     ## Error: 20
-    ## 
-    ## Traceback:
-    ## 46: stop(i) at <text>#5
-    ## 45: FUN(X, ...)
-    ## 44: withCallingHandlers(list(FUN(X, ...)), warning = whandler, message = mhandler, 
-    ##         condition = chandler) at etry.R#38
-    ## 43: withCallingHandlers(expr, error = function(e) {
+    ##   
+    ##  Traceback with variables:
+    ##   57: stop(i)
+    ##       
+    ##       Local variables:
+    ##         ..1 : <promise> (i)
     ...
 
-    ## error(s) occured during mclapply; first original message:
-    ## 
+    ## 2: error(s) occured during mclapply; first original message:
+    ##   
+    ##   
     ## Error: 2
-    ## 
-    ## Traceback:
-    ## 46: stop(i) at <text>#5
-    ## 45: FUN(X, ...)
-    ## 44: withCallingHandlers(list(FUN(X, ...)), warning = whandler, message = mhandler, 
-    ##         condition = chandler) at etry.R#38
-    ## 43: withCallingHandlers(expr, error = function(e) {
+    ##   
+    ##  Traceback with variables:
+    ##   57: stop(i)
+    ##       
+    ##       Local variables:
+    ##         ..1 : <promise> (i)
     ...
 
-    ## error(s) occured during mclapply; first original message:
-    ## 
+    ## 3: error(s) occured during mclapply; first original message:
+    ##   
+    ##   
     ## Error: 12
-    ## 
-    ## Traceback:
-    ## 46: stop(i) at <text>#5
-    ## 45: FUN(X, ...)
-    ## 44: withCallingHandlers(list(FUN(X, ...)), warning = whandler, message = mhandler, 
-    ##         condition = chandler) at etry.R#38
-    ## 43: withCallingHandlers(expr, error = function(e) {
+    ##   
+    ##  Traceback with variables:
+    ##   57: stop(i)
+    ##       
+    ##       Local variables:
+    ##         ..1 : <promise> (i)
     ...
 
 ``` r
@@ -486,8 +488,9 @@ res <-
   }, mc.retry = -3, mc.cores = 10, mc.force.fork = TRUE)
 ```
 
-    ## at least one scheduled core did not return results; maybe it was killed (by the Linux Out of Memory Killer ?) or there was a fatal error in the forked process(es)
-    ## at least one scheduled core did not return results; maybe it was killed (by the Linux Out of Memory Killer ?) or there was a fatal error in the forked process(es)
+    ## 0: at least one scheduled core did not return results; maybe it was killed (by the Linux Out of Memory Killer ?) or there was a fatal error in the forked process(es)
+
+    ## 1: at least one scheduled core did not return results; maybe it was killed (by the Linux Out of Memory Killer ?) or there was a fatal error in the forked process(es)
 
 ``` r
 stopifnot(identical(res, as.list(1:20)))
@@ -506,31 +509,42 @@ res <-
       stop(i)
     else
       i
-  }, mc.retry = 1, mc.cores = 10, mc.force.fork = TRUE)
+  }, mc.retry = 1, mc.cores = 10, mc.force.fork = TRUE, mc.dumpto = "last.dump")
 ```
 
-    ## at least one scheduled core did not return results; maybe it was killed (by the Linux Out of Memory Killer ?) or there was a fatal error in the forked process(es)
+    ## 0: at least one scheduled core did not return results; maybe it was killed (by the Linux Out of Memory Killer ?) or there was a fatal error in the forked process(es)
 
-    ## error(s) occured during mclapply; first original message:
+    ## 0: error(s) occured during mclapply; first original message:
+    ##   
+    ##   
+    ## Error: 3
+    ##   
+    ##  Traceback with variables:
+    ##   57: stop(i)
+    ##       
+    ##       Local variables:
+    ##         ..1 : <promise> (i)
+    ...
+
+    ## crash dump saved to object 'last.dump' in environment 'bettermc::crash_dumps'; for debugging the first error, use:
+    ##   'utils::debugger(attr(bettermc::crash_dumps[["last.dump"]][[3]], "dump.frames"))'
+
     ## 
     ## Error: 3
-    ## 
-    ## Traceback:
-    ## 51: stop(i) at <text>#5
-    ## 50: FUN(X, ...)
-    ## 49: withCallingHandlers(list(FUN(X, ...)), warning = whandler, message = mhandler, 
-    ##         condition = chandler) at etry.R#38
-    ## 48: withCallingHandlers(expr, error = function(e) {
+    ##   
+    ##  Traceback with variables:
+    ##   57: stop(i)
+    ##       
+    ##       Local variables:
+    ##         ..1 : <promise> (i)
+    ##         call. :  logi TRUE
+    ##         domain :  NULL
     ...
 
     ## Error in bettermc::mclapply(1:20, function(i) {: at least one scheduled core did not return results; maybe it was killed (by the Linux Out of Memory Killer ?) or there was a fatal error in the forked process(es)
-    ## 
-    ## --- AND ---
-    ## 
-    ## error(s) occured during mclapply; first original message:
-    ## 
-    ## Error: 3
-    ## 
-    ## Traceback:
-    ## 51: stop(i) at <text>#5
-    ...
+    ##   
+    ##   --- AND ---
+    ##   
+    ##   error(s) occured during mclapply; first original message:
+    ##   
+    ##   Error: 3

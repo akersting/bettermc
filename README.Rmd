@@ -51,12 +51,8 @@ knitr::knit_hooks$set(message = create_output_hook("message"))
 
 # bettermc
 
-[![CRAN version](https://www.r-pkg.org/badges/version/bettermc)](https://cran.r-project.org/package=bettermc)
-[![CRAN status](https://cranchecks.info/badges/flavor/release/bettermc)](https://cran.r-project.org/web/checks/check_results_bettermc.html)
-[![downloads](https://cranlogs.r-pkg.org/badges/grand-total/bettermc)](https://cran.r-project.org/package=bettermc)
 [![R build status](https://github.com/gfkse/bettermc/workflows/R-CMD-check/badge.svg)](https://github.com/gfkse/bettermc/actions?workflow=R-CMD-check)
 [![codecov](https://codecov.io/gh/gfkse/bettermc/branch/master/graph/badge.svg?token=FYYM156COF)](https://codecov.io/gh/gfkse/bettermc)
-[![rchk](https://github.com/gfkse/bettermc/workflows/rchk/badge.svg)](https://github.com/gfkse/bettermc/actions?workflow=rchk)
 
 The `bettermc` package provides a wrapper around the `parallel::mclapply` function for better performance, error handling, seeding and UX. 
 
@@ -84,7 +80,7 @@ By default, crashdumps and full tracebacks are generated on errors in child proc
 ```{r traceback, error=TRUE, output.lines=10}
 g <- function(x) x + 1
 f <- function(x) g(as.character(x))
-bettermc::mclapply(1:2, f)
+bettermc::mclapply(1:2, f, mc.dumpto = "last.dump")
 ```
 ```{r crashdump}
 # in a non-interactive session a file "last.dump.rds" is created
@@ -286,5 +282,5 @@ res <-
       stop(i)
     else
       i
-  }, mc.retry = 1, mc.cores = 10, mc.force.fork = TRUE)
+  }, mc.retry = 1, mc.cores = 10, mc.force.fork = TRUE, mc.dumpto = "last.dump")
 ```

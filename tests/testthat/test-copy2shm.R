@@ -82,3 +82,26 @@ test_that("MADV_HUGEPAGE does not cause issues", {
   expect_identical(allocate_from_shm(copy2shm(1:10, gen_posix_name())), 1:10)
   options(opt_bak)
 })
+
+test_that("allocate_from_shm works close to page size boundary", {
+  skip_on_os("windows")
+
+  PAGESIZE = system2("getconf", "PAGESIZE", stdout = TRUE)
+  skip_if(!is.null(attr(PAGESIZE, "status")))
+  page_size <- as.integer(PAGESIZE)
+  shm_name <- gen_posix_name()
+
+  # estimate header size
+  x <- as.raw(rep(0, page_size))
+  s <- copy2shm(x, shm_name)
+  header_size <- s[["size"]] - page_size
+  allocate_from_shm(s)
+
+  expect_no_error(
+    for (i in seq(-64, 64, 8)) {
+      x <- as.raw(rep(0, page_size - header_size + i))
+      s <- copy2shm(x, shm_name)
+      allocate_from_shm(s)
+    }
+  )
+})

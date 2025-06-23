@@ -1,6 +1,6 @@
 Package: bettermc
 Title: Enhanced Fork-Based Parallelization
-Version: 1.2.2
+Version: 1.2.2.9000
 Date: 2023-04-21
 Authors@R: 
     c(person(given = "Andreas",
@@ -28,7 +28,7 @@ Depends: R (>= 3.5.0)
 Imports:
     checkmate,
     parallel
-RoxygenNote: 7.2.3
+RoxygenNote: 7.3.2
 Suggests:
     progress,
     spelling,

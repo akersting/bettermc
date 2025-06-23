@@ -3,11 +3,17 @@ BMC
 CHARSXPs
 Crashdumps
 Hugepage
+IPC
 KiB
 Lifecycle
 MiB
 Parallelization
 Rinternals
+SEMVMX
+SIGABRT
+SIGINT
+SIGKILL
+SIGTERM
 Tracebacks
 UX
 Valgrind
@@ -22,6 +28,7 @@ deserialized
 dev
 doMC
 etry
+gc
 hyperthread
 idx
 implementational
@@ -44,6 +51,7 @@ sinked
 src
 stderr
 stdout
+systemd
 tmpfs
 traceback
 tracebacks

@@ -23,6 +23,12 @@ void R_init_bettermc(DllInfo *info) {
     {"semaphorev_unlink", (DL_FUNC) &semaphorev_unlink, 1},
     {"is_uneval_promise", (DL_FUNC) &is_uneval_promise, 2},
     {"is_eval_promise_to_missing_arg", (DL_FUNC) &is_eval_promise_to_missing_arg, 2},
+    {"set_timeout", (DL_FUNC) &set_timeout, 3},
+    {"disable_timeout", (DL_FUNC) &disable_timeout, 1},
+    {"prio_queue_create", (DL_FUNC) &prio_queue_create, 3},
+    {"prio_queue_insert", (DL_FUNC) &prio_queue_insert, 3},
+    {"prio_queue_release", (DL_FUNC) &prio_queue_release, 1},
+    {"prio_queue_destroy", (DL_FUNC) &prio_queue_destroy, 3},
     {NULL, NULL, 0}
   };
 

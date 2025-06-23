@@ -236,12 +236,12 @@ SEXP allocate_from_shm(SEXP name, SEXP type, SEXP length, SEXP size,
 #else
   // used on macOS, which reports the size in multiples of page size
   long pagesize = sysconf(_SC_PAGESIZE);
-  size_t pages = (size_t) asReal(size) / pagesize + 1;
+  size_t pages = ((size_t) asReal(size) - 1) / pagesize + 1;
 
   if (sb.st_size != pages * pagesize) {
     close(fd);
-    error("file backing shm object is of wrong size; expected: %ld bytes, actual: %ld bytes",
-          pages * pagesize, sb.st_size);
+    error("file backing shm object is of wrong size; expected: %ld bytes, actual: %jd bytes",
+          pages * pagesize, (intmax_t) sb.st_size);
   }
 #endif
 

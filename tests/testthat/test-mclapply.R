@@ -222,7 +222,7 @@ test_that("joint fatal and non-fatal errors are handled correctly", {
       }, mc.allow.fatal = TRUE, mc.fail.early = FALSE),
       regexp = "Out of Memory Killer"
     ),
-    regexp = "stop\\(i\\)"
+    regexp = "Error: 2"
   )
 
   expect_warning(
@@ -408,4 +408,52 @@ test_that("mc.system.time works", {
   expect_gte(ret[[2]], 2)
   expect_null(ret[[3]])
   expect_false(is.null(ret[[4]]))
+})
+
+test_that("mc.timeout.elapsed works", {
+  skip_on_cran()
+  skip_on_os("windows")
+  skip_on_os("mac")
+  skip_on_os("solaris")
+  res <- bettermc::mclapply(c(0, 4), function(i) Sys.sleep(i),
+                            mc.timeout.elapsed = 2, mc.allow.fatal = NA,
+                            mc.preschedule = FALSE)
+  timed_out <- sapply(res, inherits, what = "fatal-error")
+  expect_false(timed_out[1])
+  expect_true(timed_out[2])
+})
+
+test_that("mc.timeout.cpu works", {
+  skip_on_cran()
+  skip_on_os("windows")
+  skip_on_os("mac")
+  skip_on_os("solaris")
+  res <- bettermc::mclapply(c(1, 2), function(i) if (i > 1) while (TRUE) 1 + 1,
+                            mc.timeout.cpu = 2, mc.allow.error = NA,
+                            mc.timeout.signal = "SIGINT", mc.preschedule = FALSE)
+  timed_out <- sapply(res, inherits, what = "interrupt-error")
+  expect_false(timed_out[1])
+  expect_true(timed_out[2])
+})
+
+test_that("mc.prio.queue works", {
+  skip_on_cran()
+  skip_on_os("windows")
+
+  pq <- prio_queue_create(1)
+
+  t <- system.time(
+    mclapply(1:2, function(i) {
+
+      mclapply(1:2, function(j) {
+        Sys.sleep(1)
+        if (j == 1) system(sprintf("kill %d", Sys.getpid()))
+      }, mc.cores = 2,mc.prio.queue = pq, mc.allow.fatal = NA)
+
+    }, mc.cores = 2)
+  )
+
+  prio_queue_destroy(pq)
+
+  expect_gte(t["elapsed"], 4)
 })

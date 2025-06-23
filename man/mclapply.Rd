@@ -39,6 +39,11 @@ mclapply(
   mc.messages = c("m_signal", "signal", "m_output", "output", "m_ignore", "ignore"),
   mc.conditions = c("signal", "ignore"),
   mc.system.time = FALSE,
+  mc.timeout.elapsed = Inf,
+  mc.timeout.cpu = Inf,
+  mc.timeout.signal = c("SIGTERM", "SIGKILL", "SIGABRT", "SIGINT"),
+  mc.prio.queue = NULL,
+  mc.priority = 1L,
   mc.compress.chars = TRUE,
   mc.compress.altreps = c("if_allocated", "yes", "no"),
   mc.share.vectors = getOption("bettermc.use_shm", TRUE),
@@ -46,6 +51,7 @@ mclapply(
   mc.share.copy = TRUE,
   mc.shm.ipc = getOption("bettermc.use_shm", TRUE),
   mc.force.fork = FALSE,
+  mc.gc.reset.triggers = FALSE,
   mc.progress = interactive()
 )
 
@@ -204,11 +210,39 @@ Options prefixed with "m" additionally try to invoke the
 \code{FUN} is called directly from the main process, conditions might be
 signaled twice in the main process, depending on these arguments.}
 
-\item{mc.system.time}{should \code{\link{system.time}} be used to measure
-CPU (and other) times used by the invocations of \code{FUN}. If
-\code{TRUE}, the list returned will have an attribute "system_times", which
-itself is a list of the same length as \code{X} containing the time
-measurements.}
+\item{mc.system.time}{should \code{\link{system.time}} be used to measure CPU
+(and other) times used by the invocations of \code{FUN}. If \code{TRUE},
+the list returned will have an attribute "system_times", which itself is a
+list of the same length as \code{X} containing the time measurements.}
+
+\item{mc.timeout.elapsed, mc.timeout.cpu}{(Linux only) number of seconds of
+elapsed/CPU time after which \code{mc.timeout.signal} should be send to the
+child process. If \code{mc.preschedule = TRUE}, the timer is reset before
+every function invocation in the child process.}
+
+\item{mc.timeout.signal}{(Linux only) the signal to send to the child process
+in case of a timeout. Can be one of SIGTERM, SIGKILL, SIGABRT and SIGINT or
+the numeric value of (any) signal. If the signal abnormally terminates the
+process, this is equivalent to a fatal error occurring (cf.
+\code{mc.allow.fatal}). SIGINT causes a non-fatal error (cf.
+\code{mc.allow.error}) of classes \code{c("interrupt-error", "try-error")}.
+Whether or not a SIGINT is processed in a timely manner depends on the code
+being executed.}
+
+\item{mc.prio.queue}{an object as returned by
+\code{\link{prio_queue_create}}. An execution of \code{FUN} will only start
+after acquiring one of the \code{ncpu} CPU units (as configured when
+creating the queue), which it will release again after returning. The order
+in which waiting child processes are scheduled can be controlled with
+\code{mc.priority}. This feature can be used to control the \emph{total}
+number and order of running child processes in settings of (complex) nested
+parallelization.}
+
+\item{mc.priority}{a single integer or an integer vector of the same length
+as \code{X}, with 1 indicating the highest priority and \code{nprio} (as
+configured when creating the queue) indicating the lowest one. If there are
+multiple invocations of \code{FUN} pending, those with a higher priority
+will be scheduled first.}
 
 \item{mc.compress.chars}{should character vectors be compressed using
 \code{\link{char_map}} before returning them from the child process? Can
@@ -246,6 +280,9 @@ corruption, memory leaks etc. occurring in \code{FUN}. This feature
 requires that \code{mc.cores >= 2} and also ensures that the effective
 value for \code{mc.cores} never drops to less than 2 as a result of
 \code{mc.retry} being negative.}
+
+\item{mc.gc.reset.triggers}{should \code{\link{gc_reset_triggers}()} be
+called before forking?}
 
 \item{mc.progress}{should a progress bar be printed to stderr of the parent
 process (package \code{progress} must be installed)?}
@@ -291,9 +328,10 @@ display a progress bar.}
 
   POSIX shared memory has (at least) kernel persistence, i.e. it is not
   automatically freed due to process termination, except if the object is/was
-  unlinked. \code{bettermc} tries hard to not leave any byte behind, but it
-  could happen that unlinking is incomplete if the parent process is
-  terminated while \code{bettermc::mclapply} is running.
+  unlinked. (But see also the section on systemd and IPC below.)
+  \code{bettermc} tries hard to not leave any byte behind, but it could
+  happen that unlinking is incomplete if the parent process is terminated
+  while \code{bettermc::mclapply} is running.
 
   On Linux you can generally inspect the (not-unlinked) objects currently
   stored in shared memory by listing the files under \emph{/dev/shm}.
@@ -323,6 +361,19 @@ display a progress bar.}
   \code{/dev/shm}) must be (re)mounted with option \emph{huge=advise}, i.e.
   \code{mount -o remount,huge=advise /dev/shm}. (The default is
   \code{huge=never}, but this might be distribution-specific.)
+}
+
+\section{(Linux) systemd and Inter Process Communication (IPC)}{
+
+  \code{mclappy} uses various forms of IPC: POSIX shared memory and
+  semaphores, and System V semaphores. systemd, which is used by most recent
+  Linux distributions as their system and service manager, by default deletes
+  a user's IPC objects on log out. See e.g.
+  \url{https://github.com/systemd/systemd/issues/2039}. This happening will
+  apparently make \code{mclapply} fail. Users who intend to use this function
+  in an R session which continues to run after log out should hence add
+  \code{RemoveIPC=no} to \code{/etc/systemd/logind.conf} or one of the other
+  configuration files mentioned in \code{man logind.conf}.
 }
 
 \section{Windows Support}{

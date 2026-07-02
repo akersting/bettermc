@@ -3,7 +3,26 @@
 
 #define _POSIX_C_SOURCE 200112L
 
+/* As of R 4.6.0 several long-available but non-API entry points are only
+ * declared when ENABLE_LEGACY_NONAPI is defined (e.g. ATTRIB, SET_ATTRIB,
+ * Rf_findVar). Defining it is harmless on older R, where the macro is simply
+ * unused. See GitHub issue #9. */
+#ifndef ENABLE_LEGACY_NONAPI
+#define ENABLE_LEGACY_NONAPI
+#endif
+
 #include "Rinternals.h"
+
+/* These two symbols are still exported by libR but are no longer declared in
+ * Rinternals.h as of R 4.6.0: PRVALUE was removed entirely and the prototype
+ * of Rf_allocVector3 was commented out. We declare them ourselves so that we
+ * can keep using the custom-allocator (zero-copy shared memory) and
+ * promise-inspection features. R_allocator_t is declared by Rinternals.h.
+ * The #ifndef guard keeps this safe on older R where PRVALUE is a macro. */
+#ifndef PRVALUE
+extern SEXP PRVALUE(SEXP);
+#endif
+extern SEXP Rf_allocVector3(SEXPTYPE, R_xlen_t, R_allocator_t*);
 
 SEXP copy2shm(SEXP, SEXP, SEXP, SEXP);
 SEXP allocate_from_shm(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);

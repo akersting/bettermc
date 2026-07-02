@@ -1,8 +1,7 @@
 # bettermc
 
 [![R build
-status](https://github.com/gfkse/bettermc/workflows/R-CMD-check/badge.svg)](https://github.com/gfkse/bettermc/actions?workflow=R-CMD-check)
-[![codecov](https://codecov.io/gh/gfkse/bettermc/branch/master/graph/badge.svg?token=FYYM156COF)](https://codecov.io/gh/gfkse/bettermc)
+status](https://github.com/akersting/bettermc/workflows/R-CMD-check/badge.svg)](https://github.com/akersting/bettermc/actions?workflow=R-CMD-check)
 
 The `bettermc` package provides a wrapper around the
 `parallel::mclapply` function for better performance, error handling,
@@ -11,8 +10,8 @@ seeding and UX.
 ## Installation of the Development Version
 
 ``` r
-# install.packages("devtools")
-devtools::install_github("gfkse/bettermc")
+# install.packages("remotes")
+remotes::install_github("akersting/bettermc")
 ```
 
 ## Supported Platforms

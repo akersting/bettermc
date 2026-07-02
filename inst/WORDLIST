@@ -2,6 +2,7 @@ ALTREP
 BMC
 CHARSXPs
 Crashdumps
+GC
 Hugepage
 IPC
 KiB
@@ -14,6 +15,7 @@ SIGABRT
 SIGINT
 SIGKILL
 SIGTERM
+Sys
 Tracebacks
 UX
 Valgrind
@@ -21,7 +23,6 @@ Wuninitialized
 allocator
 bettermcExt
 capturable
-codecov
 crashdumps
 de
 deserialized
@@ -33,7 +34,6 @@ hyperthread
 idx
 implementational
 integerish
-macOS
 mclapply
 md
 muffleMessage
@@ -41,16 +41,13 @@ muffleWarning
 parallelization
 prescheduling
 radix
-rchk
 reproducibly
 rstan
 sem
 semv
 shm
 sinked
-src
 stderr
-stdout
 systemd
 tmpfs
 traceback

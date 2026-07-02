@@ -25,7 +25,7 @@ SEXP char_map(SEXP x) {
     goto end;
   }
 
-  const intptr_t *restrict input = (intptr_t *) DATAPTR(x);
+  const intptr_t *restrict input = (const intptr_t *) DATAPTR_RO(x);
 
 #if n_pass_value == 4
   struct uniqueN_data_UINT32_UINT32 * restrict uniqueN_data =
@@ -116,7 +116,7 @@ SEXP char_map_long(SEXP x) {
     goto end;
   }
 
-  const intptr_t *restrict input = (intptr_t *) DATAPTR(x);
+  const intptr_t *restrict input = (const intptr_t *) DATAPTR_RO(x);
 
 #if n_pass_value == 4
   struct uniqueN_data_UINT64_UINT32 * restrict uniqueN_data =

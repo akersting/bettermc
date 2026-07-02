@@ -12,9 +12,9 @@ package, e.g. doMC or rstan. This is achieved by replacing the
 }
 \details{
 This feature violates CRAN policies and is hence only included in the
-separate package \href{https://github.com/gfkse/bettermcExt}{bettermcExt},
+separate package \href{https://github.com/akersting/bettermcExt}{bettermcExt},
 which you can install e.g. via
 \preformatted{
-remotes::install_github("gfkse/bettermcExt", remotes::github_release())
+remotes::install_github("akersting/bettermcExt", remotes::github_release())
 }
 }

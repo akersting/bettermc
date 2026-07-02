@@ -5,6 +5,8 @@ on:
 
 name: R-CMD-check
 
+permissions: read-all
+
 jobs:
   R-CMD-check:
     if: "!contains(github.event.head_commit.message, '[ci skip]')"
@@ -29,7 +31,7 @@ jobs:
       R_KEEP_PKG_SOURCE: yes
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
 
       - uses: r-lib/actions/setup-pandoc@v2
 
@@ -44,4 +46,26 @@ jobs:
           extra-packages: any::rcmdcheck
           needs: check
 
+      # Run the check but do not fail on its results here; the gate step below
+      # decides, so that the single known non-API-calls WARNING can be tolerated
+      # (bettermc deliberately uses a few non-API entry points, see #9).
       - uses: r-lib/actions/check-r-package@v2
+        with:
+          error-on: '"never"'
+          upload-snapshots: true
+
+      - name: Fail on any check result except the known non-API WARNING
+        shell: Rscript {0}
+        run: |
+          log <- Sys.glob(file.path("check", "*.Rcheck", "00check.log"))
+          if (length(log) != 1L) stop("could not locate a unique 00check.log")
+          chk <- rcmdcheck::parse_check(log)
+          # Tolerate ONLY the non-API-calls WARNING; fail on everything else
+          # (any error, or any other warning).
+          unexpected <- chk$warnings[!grepl("non-API", chk$warnings)]
+          cat(sprintf("R CMD check: errors=%d warnings=%d (tolerated=%d) notes=%d\n",
+                      length(chk$errors), length(chk$warnings),
+                      sum(grepl("non-API", chk$warnings)), length(chk$notes)))
+          if (length(chk$errors) || length(unexpected)) {
+            stop("R CMD check reported problems beyond the tolerated non-API WARNING.")
+          }

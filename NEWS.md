@@ -1,3 +1,35 @@
+# bettermc 1.2.2.9000
+
+## New Features
+* new arguments `mc.timeout.elapsed` and `mc.timeout.cpu` to `mclapply()` (Linux
+only): impose a limit on the elapsed/CPU time of each invocation of `FUN`. On
+timeout, the signal given by the new argument `mc.timeout.signal` (one of
+SIGTERM, SIGKILL, SIGABRT, SIGINT or any numeric signal) is sent to the child
+process; depending on the signal this results in a fatal error (cf.
+`mc.allow.fatal`) or, for SIGINT, a non-fatal error (cf. `mc.allow.error`)
+* support for priority queues to control the *total* number and order of running
+child processes in settings of (complex) nested parallelization: new
+(experimental) exported function `prio_queue_create()` (together with
+`prio_queue_insert()`, `prio_queue_release()` and `prio_queue_destroy()`) and
+new arguments `mc.prio.queue` and `mc.priority` to `mclapply()` (not supported on
+Windows)
+* new exported function `gc_reset_triggers()`, which repeatedly triggers full
+garbage collections until the GC trigger thresholds no longer decrease; this
+helps to keep the memory usage of fork-based parallelization in check after
+removing huge objects. The new argument `mc.gc.reset.triggers` to `mclapply()`
+(default `FALSE`) calls it before forking
+
+## Bug Fixes
+* avoid truncation of long tracebacks from `etry()` (and hence also from
+`mclapply()`) by printing them as a separate message
+* fix installation on R (>= 4.6.0): several non-API entry points used by the C
+code (`ATTRIB`, `SET_ATTRIB`, `Rf_findVar`, `DATAPTR`, `PRVALUE` and
+`Rf_allocVector3`) are no longer declared in `Rinternals.h`. The package now
+enables R's `ENABLE_LEGACY_NONAPI` compatibility flag, replaces `DATAPTR` with
+the API-stable `DATAPTR_RO`/typed accessors, and itself declares the two
+remaining symbols which are still exported by R but no longer in any header
+(`PRVALUE` and `Rf_allocVector3`) (#9)
+
 # bettermc 1.2.2
 
 ## Bug Fixes
@@ -6,7 +38,7 @@
 # bettermc 1.2.1
 
 ## New Features
-* add support for overloading `parallel::mclapply()` with `bettermc::mclapply()` via the [bettermcExt](https://github.com/gfkse/bettermcExt)-package on GitHub;
+* add support for overloading `parallel::mclapply()` with `bettermc::mclapply()` via the [bettermcExt](https://github.com/akersting/bettermcExt)-package on GitHub;
 this enables the use of `bettermc::mclapply()` by third-party packages originally using `mclapply()` from the *parallel*-package, e.g. *doMC* or *rstan*
 * when applying over a character vector, that vector is now - by default - used to name the (otherwise unnamed) result (argument `mc.use.names`)
 * tracebacks from `etry()` (and hence also from `mclapply()`) now contain an overview of the local variables and their values (essentially the output of `ls.str()` applied to all the frames on the call stack)

@@ -63,7 +63,7 @@ SEXP copy2shm(SEXP x, SEXP n, SEXP overwrite, SEXP huge_threshold) {
   }
 
   SEXP off = allocVector(RAWSXP, 1);
-  size_t offset = sizeof(R_allocator_t) + ((char *) DATAPTR(off) - (char *) off);
+  size_t offset = sizeof(R_allocator_t) + ((const char *) DATAPTR_RO(off) - (const char *) off);
   size_t data_size;
 
   switch(TYPEOF(x)) {
@@ -153,7 +153,7 @@ SEXP copy2shm(SEXP x, SEXP n, SEXP overwrite, SEXP huge_threshold) {
     sigaction(SIGBUS, &bussa, &oldsa);
     sigprocmask(SIG_UNBLOCK, &busset, &oldset);
 
-    memcpy(sptr + offset, DATAPTR(x), data_size);
+    memcpy(sptr + offset, DATAPTR_RO(x), data_size);
   } else {
     // there was a SIGBUS
     sigprocmask(SIG_SETMASK, &oldset, NULL);
@@ -210,6 +210,20 @@ void shm_free(R_allocator_t *allocator, void *addr) {
 
   munmap(data->ptr, data->size);
   free(data);
+}
+
+/* Writable data pointer for an atomic vector. The typed
+ * accessors are part of the official API, unlike the bare DATAPTR, which is
+ * non-API as of R 4.6.0. */
+static void *vec_dataptr(SEXP x) {
+  switch (TYPEOF(x)) {
+  case LGLSXP:  return LOGICAL(x);
+  case INTSXP:  return INTEGER(x);
+  case REALSXP: return REAL(x);
+  case CPLXSXP: return COMPLEX(x);
+  case RAWSXP:  return RAW(x);
+  default: error("unsupported SEXP type: %s", type2char(TYPEOF(x)));
+  }
 }
 
 SEXP allocate_from_shm(SEXP name, SEXP type, SEXP length, SEXP size,
@@ -306,7 +320,7 @@ SEXP allocate_from_shm(SEXP name, SEXP type, SEXP length, SEXP size,
   }
 
   SEXP off = allocVector(RAWSXP, 1);
-  size_t offset = sizeof(R_allocator_t) + ((char *) DATAPTR(off) - (char *) off);
+  size_t offset = sizeof(R_allocator_t) + ((const char *) DATAPTR_RO(off) - (const char *) off);
   if (data->size - offset != expected_size) {
     shm_free(&allocator, sptr);
     error("'alloc_from_shm' expected a shared memory object with %zu bytes but it has %zu bytes.",
@@ -317,11 +331,11 @@ SEXP allocate_from_shm(SEXP name, SEXP type, SEXP length, SEXP size,
   SEXP ret;
   if (!asLogical(copy) && asReal(length) >= 2) {
     ret = PROTECT(allocVector3(asInteger(type), asReal(length), &allocator));
-    VALGRIND_MAKE_MEM_DEFINED(DATAPTR(ret), dataptr_size);
+    VALGRIND_MAKE_MEM_DEFINED(vec_dataptr(ret), dataptr_size);
   } else {
     ret = PROTECT(allocVector(asInteger(type), asReal(length)));
 
-    memcpy(DATAPTR(ret), (char *) sptr + offset, dataptr_size);
+    memcpy(vec_dataptr(ret), (char *) sptr + offset, dataptr_size);
 
     shm_free(&allocator, sptr);
   }
